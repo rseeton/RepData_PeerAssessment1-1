@@ -7,19 +7,111 @@ output:
 
 
 ## Loading and preprocessing the data
+### 1. Load the data, checks that the activity.csv file is present.
 
+```r
+if (file.exists("activity.csv"))
+{ 
+	activity_data <- read.csv("activity.csv")
+} else 
+{
+    return(message("Activity data files (activity.csv)"))
+}
+```
+####    Quick review of the data
+```r
+str(activity_data)
+```
+### 2. Aggregate total steps by day
+
+```r
+activity_steps_totals <- aggregate(steps ~ date, data=activity_data, FUN = function(x) c(totals=sum(x))) 
+```
+
+## Loading and preprocessing the data
+####    Plot Histogram of Aggregate steps totals
+```r
+hist(activity_steps_totals$steps, 
+	main="Histogram for Activity - Total Steps by Day", 
+	xlab="Number of Steps", 
+	ylab="Number of Days", 
+	breaks="freedman-diaconis",
+	col="red")
+```
+```r
+plot(x, sin(seq(-pi, pi, by = 0.1)), type = "l", col = "red", xlab = "angle", 
+    ylab = "sin(x)", main = "Example of graphic")
+    
+```
 
 
 ## What is mean total number of steps taken per day?
 
+##Mean number of Steps per Day: `mean(activity_steps_totals$steps)`
+###Median number of Steps per Day: `median(activity_steps_totals$steps)`
 
 
 ## What is the average daily activity pattern?
 
+### 3. Aggregate steps by interval
+```
+activity_steps_averages <- aggregate(steps ~ interval, data=activity_data, FUN = function(x) c(average=mean(x))) 
+```
+#### Line plot of Steps per Interval
+```
+plot(activity_steps_averages$steps, type="l", col="blue", ylab="Number of Steps", xlab="Interval Number", main="Line Plot of Steps by 5 minute Intervals")
+```
+
+#### Interval with greatest average number of steps
+####Interval #: `activity_steps_averages[which(activity_steps_averages$steps == max(activity_steps_averages$steps)),]`
 
 
 ## Imputing missing values
 
+### Number of NA values
+####Count NAs: `count_NA <- sum(is.na(activity_data$steps))`
+
+### Repopulate NA's with arbitrary values...
+#### Simplest approach is to use the average value from each timestep, as we have already calculated that value
+```
+activity_steps <- data.frame(activity_data$steps)
+activity_steps[is.na(activity_steps),] <- ceiling(tapply(X=activity_data$steps,FUN=mean,INDEX=activity_data$interval, na.rm=TRUE))
+activity_steps_imputted <- cbind(activity_steps, activity_data)
+colnames(activity_steps_imputted) <- c("Steps_Imputted","Steps_Original", "Date", "Interval")
+
+activity_steps_imputted_totals <- aggregate(Steps_Imputted ~ Date, data=activity_steps_imputted, FUN = function(x) c(totals=sum(x))) 
+```
+
+#### Plot Histogram
+```
+hist(activity_steps_imputted_totals$Steps_Imputted, 
+	main="Histogram for Activity - Total Steps (with Imputted Values)", 
+	xlab="Number of Steps", 
+	ylab="Number of Days", 
+	breaks="freedman-diaconis",
+	col="pink")
+```	
+####Mean number of Steps per Day based on Imputted Data: `mean(activity_steps_imputted_totals$Steps_Imputted)`
+####Median number of Steps per Day based on Imputted Data `median(activity_steps_imputted_totals$Steps_Imputted)`
+
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+### Add 'day' field to differentiate weekdays (0)  vs weekends (1)
+```
+tm1.lt <- as.POSIXlt(activity_data$date)
+activity_data$day <- tm1.lt$wday
+activity_data$day[activity_data$day <= 5] <- "0" # Day = 0 if Weekday
+activity_data$day[activity_data$day > 5] <- "1"  # Day = 1 if Weekend
+
+activity_steps_averages_by_weekday <- aggregate( data=activity_data, steps ~ day + interval, FUN=mean )
+
+activity_data_weekdays <- activity_steps_averages_by_weekday[activity_steps_averages_by_weekday$day==0,]
+activity_data_weekends <- activity_steps_averages_by_weekday[activity_steps_averages_by_weekday$day==1,]
+
+old.par <- par(mfrow=c(2, 1))
+plot(activity_data_weekends$steps,type="l", col="blue", ylab="Number of Steps", xlab="Interval Number", main="Line Plot of Steps by 5 minute Intervals - Weekends")
+plot(activity_data_weekdays$steps,type="l", col="blue", ylab="Number of Steps", xlab="Interval Number", main="Line Plot of Steps by 5 minute Intervals - Weekdays")
+par(old.par)
+```
