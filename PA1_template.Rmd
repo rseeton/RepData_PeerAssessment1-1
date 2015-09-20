@@ -7,7 +7,7 @@ output:
 
 
 ## Loading and preprocessing the data
-### 1. Load the data, checks that the activity.csv file is present.
+#### Load the data, checks that the activity.csv file is present.
 
 ```{r}
 if (file.exists("activity.csv"))
@@ -18,49 +18,53 @@ if (file.exists("activity.csv"))
     return(message("Activity data files (activity.csv)"))
 }
 ```
-####    Quick review of the data
+
+#### Quick review of the data
 ```{r}
 summary(activity_data)
 str(activity_data)
 ```
-### 2. Aggregate total steps by day
 
+#### Aggregate and Plot total steps by day
 ```{r}
 activity_steps_totals <- aggregate(steps ~ date, data=activity_data, FUN = function(x) c(totals=sum(x))) 
-```
-
-####    Plot Histogram of Aggregate steps totals
-```{r}
 hist(activity_steps_totals$steps, main="Histogram for Activity - Total Steps by Day", xlab="Number of Steps", ylab="Number of Days", breaks="freedman-diaconis", col="red")
 ```
 
 ## What is mean total number of steps taken per day?
 
-###Mean number of Steps per Day: `mean(activity_steps_totals$steps)`
-###Median number of Steps per Day: `median(activity_steps_totals$steps)`
+####Mean number of Steps per Day: 
+```{r}
+mean(activity_steps_totals$steps)
+```
+
+###Median number of Steps per Day: 
+```{r}
+median(activity_steps_totals$steps)
+```
 
 
 ## What is the average daily activity pattern?
 
-### 3. Aggregate steps by interval
+#### Aggregate and Plot steps by interval
 ```{r}
 activity_steps_averages <- aggregate(steps ~ interval, data=activity_data, FUN = function(x) c(average=mean(x))) 
-```
-#### Line plot of Steps per Interval
-```{r}
 plot(activity_steps_averages$steps, type="l", col="blue", ylab="Number of Steps", xlab="Interval Number", main="Line Plot of Steps by 5 minute Intervals")
 ```
 
 #### Interval with greatest average number of steps
-####Interval #: `activity_steps_averages[which(activity_steps_averages$steps == max(activity_steps_averages$steps)),]`
+```{r}
+activity_steps_averages[which(activity_steps_averages$steps == max(activity_steps_averages$steps)),]
+```
 
 
 ## Imputing missing values
+####Count NAs: 
+```{r}
+sum(is.na(activity_data$steps))
+```
 
-### Number of NA values
-####Count NAs: `count_NA <- sum(is.na(activity_data$steps))`
-
-### Repopulate NA's with arbitrary values...
+#### Repopulate NA's with arbitrary values...
 #### Simplest approach is to use the average value from each timestep, as we have already calculated that value
 ```{r}
 activity_steps <- data.frame(activity_data$steps)
@@ -71,13 +75,20 @@ colnames(activity_steps_imputed) <- c("Steps_Imputed","Steps_Original", "Date", 
 activity_steps_imputed_totals <- aggregate(Steps_Imputed ~ Date, data=activity_steps_imputed, FUN = function(x) c(totals=sum(x))) 
 ```
 
-#### Plot Histogram
+#### Plot Histogram with Imputed values for NA's
 ```{r}
 hist(activity_steps_imputed_totals$Steps_Imputed, main="Histogram for Activity - Total Steps (with Imputed Values)", 	xlab="Number of Steps", 	ylab="Number of Days", 	breaks="freedman-diaconis",	col="pink")
 ```	
 
-####Mean number of Steps per Day based on Imputed Data: `mean(activity_steps_imputed_totals$Steps_Imputed)`
-####Median number of Steps per Day based on Imputed Data `median(activity_steps_imputed_totals$Steps_Imputed)`
+####Mean number of Steps per Day based on Imputed Data: 
+```{r}
+mean(activity_steps_imputed_totals$Steps_Imputed)
+```
+
+####Median number of Steps per Day based on Imputed Data:
+```{r}
+median(activity_steps_imputed_totals$Steps_Imputed)
+```
 
 ####Percent change in Mean number of steps per day: 
 ```{r}
@@ -89,26 +100,27 @@ hist(activity_steps_imputed_totals$Steps_Imputed, main="Histogram for Activity -
 (median(activity_steps_imputed_totals$Steps_Imputed)-median(activity_steps_totals$steps))/median(activity_steps_totals$steps)*100
 ```
 
+###We see a small increase in the mean and median step count when we impute the average in place of the NA values.
+
 ## Are there differences in activity patterns between weekdays and weekends?
 
-### Add 'day' field to differentiate weekdays (0)  vs weekends (1)
+#### Differentiate weekdays (0)  vs weekends (1) in a 'day' field
 ```{r}
 tm1.lt <- as.POSIXlt(activity_data$date)
 activity_data$day <- tm1.lt$wday
 activity_data$day[activity_data$day <= 5] <- "0" # Day = 0 if Weekday
 activity_data$day[activity_data$day > 5] <- "1"  # Day = 1 if Weekend
-
 activity_steps_averages_by_weekday <- aggregate( data=activity_data, steps ~ day + interval, FUN=mean )
-
 activity_data_weekdays <- activity_steps_averages_by_weekday[activity_steps_averages_by_weekday$day==0,]
 activity_data_weekends <- activity_steps_averages_by_weekday[activity_steps_averages_by_weekday$day==1,]
 ```
 
-### Plot Weekday and Weekend Interval Activity Historgrams
+#### Plot Weekday and Weekend Interval Activity Historgrams
 ```{r fig.width = 10, fig.height = 10}
 old.par <- par(mfrow=c(2, 1))
 plot(activity_data_weekends$steps,type="l", col="blue", ylab="Number of Steps", xlab="Interval Number", main="Line Plot of Steps by 5 minute Intervals - Weekends")
 plot(activity_data_weekdays$steps,type="l", col="blue", ylab="Number of Steps", xlab="Interval Number", main="Line Plot of Steps by 5 minute Intervals - Weekdays")
 ```
 
-Generally, I'd say the data suggests that people are more active on the weekends.  There is more early morning activity and spikes/troughs are flattened somewhat.
+###Generally, the data suggests that people are more active on the weekends.  
+###There is more early morning activity and the activity is more constant (reduced spikes/troughs) over the weekends when compared to the weekday chart.
