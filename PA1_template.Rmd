@@ -3,70 +3,75 @@ title: "Reproducible Research: Peer Assessment 1"
 output: 
   html_document:
     keep_md: true
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+
 ---
 
 
-## Loading and preprocessing the data
-#### Load the data, checks that the activity.csv file is present.
+# Loading and preprocessing the data
+## Load the data, checks that the activity.csv file is present.
 
-```{r}
+```{r getdata}
 if (file.exists("activity.zip"))
 { 
-	activity_data <- read.csv("activity.zip")
+	activity_data <- read.csv(unz("activity.zip", "activity.csv"))
 } else 
 {
     return(message("Activity data files (activity.zip) missing"))
 }
 ```
 
-#### Quick review of the data
-```{r}
+### Quick review of the data
+```{r reviewdata}
 summary(activity_data)
 str(activity_data)
 ```
 
-#### Aggregate and Plot total steps by day
-```{r}
+### Aggregate and Plot total steps by day
+```{r aggregate_and_plot_data}
 activity_steps_totals <- aggregate(steps ~ date, data=activity_data, FUN = function(x) c(totals=sum(x))) 
 hist(activity_steps_totals$steps, main="Histogram for Activity - Total Steps by Day", xlab="Number of Steps", ylab="Number of Days", breaks="freedman-diaconis", col="red")
 ```
 
-## What is mean total number of steps taken per day?
+# What is mean total number of steps taken per day?
 
-####Mean number of Steps per Day: 
-```{r}
+##Mean number of Steps per Day: 
+```{r mean_steps}
 mean(activity_steps_totals$steps)
 ```
 
-###Median number of Steps per Day: 
-```{r}
+##Median number of Steps per Day: 
+```{r median_steps}
 median(activity_steps_totals$steps)
 ```
 
 
-## What is the average daily activity pattern?
+# What is the average daily activity pattern?
 
-#### Aggregate and Plot steps by interval
-```{r}
+## Aggregate and Plot steps by interval
+```{r plot_activity}
 activity_steps_averages <- aggregate(steps ~ interval, data=activity_data, FUN = function(x) c(average=mean(x))) 
 plot(activity_steps_averages$steps, type="l", col="blue", ylab="Number of Steps", xlab="Interval Number", main="Line Plot of Steps by 5 minute Intervals")
 ```
 
-#### Interval with greatest average number of steps
-```{r}
+## Interval with greatest average number of steps
+```{r interval_highmark}
 activity_steps_averages[which(activity_steps_averages$steps == max(activity_steps_averages$steps)),]
 ```
 
 
-## Imputing missing values
-####Count NAs: 
-```{r}
+# Imputing missing values
+##Count NAs: 
+```{r count_na}
 sum(is.na(activity_data$steps))
 ```
 
-#### Repopulate NA's with arbitrary values...
-#### Simplest approach is to use the average value from each timestep, as we have already calculated that value
-```{r}
+## Repopulate NA's with arbitrary values...
+
+Simplest approach is to use the average value from each timestep, as we have already calculated that value
+```{r replace_na_with_imputed_values}
 activity_steps <- data.frame(activity_data$steps)
 activity_steps[is.na(activity_steps),] <- ceiling(tapply(X=activity_data$steps,FUN=mean,INDEX=activity_data$interval, na.rm=TRUE))
 activity_steps_imputed <- cbind(activity_steps, activity_data)
@@ -75,37 +80,37 @@ colnames(activity_steps_imputed) <- c("Steps_Imputed","Steps_Original", "Date", 
 activity_steps_imputed_totals <- aggregate(Steps_Imputed ~ Date, data=activity_steps_imputed, FUN = function(x) c(totals=sum(x))) 
 ```
 
-#### Plot Histogram with Imputed values for NA's
-```{r}
+## Plot Histogram with Imputed values for NA's
+```{r plot_with_imputed_data}
 hist(activity_steps_imputed_totals$Steps_Imputed, main="Histogram for Activity - Total Steps (with Imputed Values)", 	xlab="Number of Steps", 	ylab="Number of Days", 	breaks="freedman-diaconis",	col="pink")
 ```	
 
-####Mean number of Steps per Day based on Imputed Data: 
-```{r}
+##Mean number of Steps per Day based on Imputed Data: 
+```{r mean_with_imputed_data}
 mean(activity_steps_imputed_totals$Steps_Imputed)
 ```
 
-####Median number of Steps per Day based on Imputed Data:
-```{r}
+##Median number of Steps per Day based on Imputed Data:
+```{r median_with_imputed_data}
 median(activity_steps_imputed_totals$Steps_Imputed)
 ```
 
-####Percent change in Mean number of steps per day: 
-```{r}
+Percent change in Mean number of steps per day: 
+```{r percent_change_means}
 (mean(activity_steps_imputed_totals$Steps_Imputed)-mean(activity_steps_totals$steps))/mean(activity_steps_totals$steps)*100
 ```
 
-####Percent change in Median number of steps per day: 
-```{r}
+Percent change in Median number of steps per day: 
+```{r percent_change_medians}
 (median(activity_steps_imputed_totals$Steps_Imputed)-median(activity_steps_totals$steps))/median(activity_steps_totals$steps)*100
 ```
 
-###We see a small increase in the mean and median step count when we impute the average in place of the NA values.
+We see a small increase in the mean and median step count when we impute the average in place of the NA values.
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
-#### Differentiate weekdays (0)  vs weekends (1) in a 'day' field
-```{r}
+Differentiate weekdays (0)  vs weekends (1) in a 'day' field
+```{r separate_weekdays_and_weekends}
 tm1.lt <- as.POSIXlt(activity_data$date)
 activity_data$day <- tm1.lt$wday
 activity_data$day[activity_data$day <= 5] <- "0" # Day = 0 if Weekday
@@ -115,12 +120,13 @@ activity_data_weekdays <- activity_steps_averages_by_weekday[activity_steps_aver
 activity_data_weekends <- activity_steps_averages_by_weekday[activity_steps_averages_by_weekday$day==1,]
 ```
 
-#### Plot Weekday and Weekend Interval Activity Historgrams
-```{r fig.width = 10, fig.height = 10}
+## Plot Weekday and Weekend Interval Activity Historgrams
+```{r plot_weekdays_vs_weekends, fig.width = 10, fig.height = 10}
 old.par <- par(mfrow=c(2, 1))
 plot(activity_data_weekends$steps,type="l", col="blue", ylab="Number of Steps", xlab="Interval Number", main="Line Plot of Steps by 5 minute Intervals - Weekends")
 plot(activity_data_weekdays$steps,type="l", col="blue", ylab="Number of Steps", xlab="Interval Number", main="Line Plot of Steps by 5 minute Intervals - Weekdays")
 ```
 
-###Generally, the data suggests that people are more active on the weekends.  
-###There is more early morning activity and the activity is more constant (reduced spikes/troughs) over the weekends when compared to the weekday chart.
+Generally, the data suggests that people are more active on the weekends.  
+
+There is more early morning activity and the activity is more constant (reduced spikes/troughs) over the weekends when compared to the weekday chart.
