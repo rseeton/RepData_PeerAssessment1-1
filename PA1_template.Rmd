@@ -10,12 +10,12 @@ output:
 #### Load the data, checks that the activity.csv file is present.
 
 ```{r}
-if (file.exists("activity.csv"))
+if (file.exists("activity.zip"))
 { 
-	activity_data <- read.csv("activity.csv")
+	activity_data <- read.csv("activity.zip")
 } else 
 {
-    return(message("Activity data files (activity.csv)"))
+    return(message("Activity data files (activity.zip) missing"))
 }
 ```
 
